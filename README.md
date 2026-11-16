@@ -42,7 +42,7 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 
 - LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）
 - 网口的链路速率和实际转发（目前只在 Breed 里验证了 PHY 链路状态）
-- 5G 的 PCIe 设备是否为 QCA9880 系列
+- 5G 的 PCIe 设备已实测为 QCA9888（168c:0056），使用 ath10k-firmware-qca9888-ct
 - 各 MAC 的递增规则（目前 eth0 和 wmac 共用 devicedata 里的同一个 MAC）
 
 ## GitHub Actions
