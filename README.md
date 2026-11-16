@@ -19,7 +19,15 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`
 - 向 `image/generic.mk` 追加设备定义（firmware 分区 15360k）
-- 向 `02_network` 添加交换机配置（`0@eth0` 加 1–4 口 LAN）
+- 向 `02_network` 添加交换机配置，已用 Breed 的 MDIO 实测端口对应关系：
+
+| 面板口 | PHY | 交换机端口 | OpenWrt 名称 |
+|---|---|---|---|
+| 1 | 4 | 5 | lan1 |
+| 2 | 3 | 4 | lan2 |
+| 3 | 2 | 3 | lan3 |
+| 4 | 1 | 2 | lan4 |
+| PoE IN | 0 | 1 | lan5 |
 
 ## Flash 分区（沿用原厂位置）
 
@@ -33,6 +41,6 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 ## 尚未实测的项目
 
 - LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）
-- 网口与交换机端口的对应关系；是否有 WAN 口
+- 网口的链路速率和实际转发（目前只在 Breed 里验证了 PHY 链路状态）
 - 5G 的 PCIe 设备是否为 QCA9880 系列
 - 各 MAC 的递增规则（目前 eth0 和 wmac 共用 devicedata 里的同一个 MAC）
