@@ -18,7 +18,7 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 ## 脚本做了什么
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`
-- 向 `image/generic.mk` 追加设备定义（firmware 分区 15360k）
+- 向 `image/generic.mk` 追加设备定义（firmware 分区 16000k）
 - 向 `02_network` 添加交换机配置，已用 Breed 的 MDIO 实测端口对应关系：
 
 | 面板口 | PHY | 交换机端口 | OpenWrt 名称 |
@@ -29,7 +29,7 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 | 4 | 1 | 2 | lan4 |
 | PoE IN | 0 | 1 | lan5 |
 
-## Flash 分区（沿用原厂位置）
+## Flash 分区（按 Breed 的 K2T 布局）
 
 | 区域 | 偏移 | 大小 |
 |---|---|---|

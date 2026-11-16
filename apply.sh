@@ -40,7 +40,7 @@ define Device/h3c_wa4320-acn-h20-fit
   DEVICE_VENDOR := H3C
   DEVICE_MODEL := WA4320-ACN-H20-FIT
   DEVICE_PACKAGES := kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 nmap tcpdump mtr iperf3 ethtool bind-dig ip-full
-  IMAGE_SIZE := 15360k
+  IMAGE_SIZE := 16000k
 endef
 TARGET_DEVICES += h3c_wa4320-acn-h20-fit
 EOF
