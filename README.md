@@ -44,3 +44,7 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 - ç½‘å£çš„é“¾è·¯é€Ÿç‡å’Œå®é™…è½¬å‘ï¼ˆç›®å‰åªåœ¨ Breed é‡ŒéªŒè¯äº† PHY é“¾è·¯çŠ¶æ€ï¼‰
 - 5G çš„ PCIe è®¾å¤‡æ˜¯å¦ä¸º QCA9880 ç³»åˆ—
 - å„ MAC çš„é€’å¢è§„åˆ™ï¼ˆç›®å‰ eth0 å’Œ wmac å…±ç”¨ devicedata é‡Œçš„åŒä¸€ä¸ª MACï¼‰
+
+## GitHub Actions
+
+ÍÆËÍµ½ GitHub ºó£¬ÔÚ Actions Ò³Ñ¡Ôñ **Build OpenWrt**£¬µã Run workflow£¬Ä¬ÈÏ·ÖÖ§ openwrt-24.10¡£Íê³ÉºóÔÚ Artifacts ÏÂÔØ initramfs-kernel ºÍ sysupgrade ¾µÏñ¡£
