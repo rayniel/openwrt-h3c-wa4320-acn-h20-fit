@@ -63,6 +63,24 @@ if ! grep -q "$BOARD" "$NET"; then
 	chmod +x "$NET"
 fi
 
+CAL="$SRC/target/linux/ath79/generic/base-files/etc/hotplug.d/firmware/11-ath10k-caldata"
+if ! grep -q "$BOARD" "$CAL"; then
+	# QCA9888 board data comes from ART 0x5000; MAC = Breed ethaddr + 2
+	awk -v b="$BOARD" '
+		!done && /dlink,dir-842-c1\|\\/ {
+			print "\t" b ")"
+			print "\t\tcaldata_extract \"art\" 0x5000 0x2f20"
+			print "\t\tath10k_patch_mac $(macaddr_add $(mtd_get_mac_ascii breed-env ethaddr) 2)"
+			print "\t\tln -sf /lib/firmware/ath10k/pre-cal-pci-0000\\:00\\:00.0.bin \\"
+			print "\t\t\t/lib/firmware/ath10k/QCA9888/hw2.0/board.bin"
+			print "\t\t;;"
+			done = 1
+		}
+		{ print }
+	' "$CAL" >"$CAL.tmp" && mv "$CAL.tmp" "$CAL"
+	chmod +x "$CAL"
+fi
+
 echo "patched $SRC"
 
 if [ "$DO_CONFIG" = 1 ]; then
