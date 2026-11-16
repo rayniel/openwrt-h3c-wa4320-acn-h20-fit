@@ -18,7 +18,7 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 ## 脚本做了什么
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`
-- 向 `image/generic.mk` 追加设备定义（firmware 分区 16000k）
+- 向 `image/generic.mk` 追加设备定义（firmware 分区 15744k）
 - 向 `02_network` 添加交换机配置，已用 Breed 的 MDIO 实测端口对应关系：
 
 | 面板口 | PHY | 交换机端口 | OpenWrt 名称 |
@@ -29,29 +29,26 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 | 4 | 1 | 2 | lan4 |
 | PoE IN | 0 | 1 | lan5 |
 
-## Flash 分区（按 Breed 的 K2T 布局）
+## Flash 分区（按 Breed 的 K2T 布局；Breed 网页闪存布局请选 K2T）
 
 | 区域 | 偏移 | 大小 |
 |---|---|---|
-| u-boot（Breed） | 0x000000 | 0x1e000 |
-| breed-env（Breed 内部环境变量，`ethaddr` 在 +0xc） | 0x01e000 | 0x1000 |
-| firmware（Breed 默认自动启动 0x50000） | 0x050000 | 0xfa0000 |
+| u-boot（Breed 及其环境变量，不要改动） | 0x000000 | 0x90000 |
+| firmware（K2T 布局下 Breed 自动启动 0x90000） | 0x090000 | 0xf60000 |
 | art（2.4G 校准 +0x1000，5G 校准 +0x5000） | 0xff0000 | 0x10000 |
 
 ## MAC 地址
 
-MAC 来自 Breed 内部环境变量（Breed 网页 → 环境变量设置，选 [Breed 内部]，位置 0x1e000）。
-在 Breed 里设置 `ethaddr=XX:XX:XX:XX:XX:XX`，重刷 OpenWrt 不会丢失。
+MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSDK 布局，在 MAC 设置里修改第一个 MAC 即可，其余两个不会被读取。改完后切回 K2T 布局即可自动启动。
 
-- `ethaddr` 必须是环境变量里的**第一个**变量（OpenWrt 按固定偏移 0xc 读取 17 个字符）
-- eth0 用 `ethaddr`，2.4G 用 +1，5G 用 +2
-- 若未设置 `ethaddr`，MAC 会读取失败，使用随机地址
+- eth0 用基础 MAC，2.4G 为 +1，5G 为 +2，WAN 建议 +3
+- ART+0x0 为空（0xff）时 MAC 读取失败，会使用随机地址
 
 ### WAN 口的 MAC
 
 五个网口都挂在同一个 `eth0` 上，由 QCA8337 交换芯片用 VLAN 划分。当前没有给 WAN 单独指定 MAC：
 
-- 未配置 WAN 时，`br-lan` 继承 `eth0` 的 MAC（`ethaddr`）。
+- 未配置 WAN 时，`br-lan` 继承 `eth0` 的 MAC。
 - 配置了 WAN（如 `eth0.2`）时，WAN 同样继承 `eth0` 的 MAC，与 LAN 相同。LAN 和 WAN 属于不同二层域，通常没有问题。
 - 需要不同的 WAN MAC（如运营商绑定 MAC）时，可在 LuCI 的 WAN 接口里手动设置，或在 `02_network` 中使用 `ucidef_set_interface_macaddr "wan" "$(macaddr_add $(cat /sys/class/net/eth0/address) 3)"`。
 - 2.4G 已用 +1，5G 已用 +2，所以 WAN 建议用 +3，避免重复。

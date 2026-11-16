@@ -40,7 +40,7 @@ define Device/h3c_wa4320-acn-h20-fit
   DEVICE_VENDOR := H3C
   DEVICE_MODEL := WA4320-ACN-H20-FIT
   DEVICE_PACKAGES := kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 nmap tcpdump mtr iperf3 ethtool bind-dig ip-full
-  IMAGE_SIZE := 16000k
+  IMAGE_SIZE := 15744k
 endef
 TARGET_DEVICES += h3c_wa4320-acn-h20-fit
 EOF
@@ -65,12 +65,12 @@ fi
 
 CAL="$SRC/target/linux/ath79/generic/base-files/etc/hotplug.d/firmware/11-ath10k-caldata"
 if ! grep -q "$BOARD" "$CAL"; then
-	# QCA9888 board data comes from ART 0x5000; MAC = Breed ethaddr + 2
+	# QCA9888 board data comes from ART 0x5000; MAC = ART base MAC + 2
 	awk -v b="$BOARD" '
 		!done && /dlink,dir-842-c1\|\\/ {
 			print "\t" b ")"
 			print "\t\tcaldata_extract \"art\" 0x5000 0x2f20"
-			print "\t\tath10k_patch_mac $(macaddr_add $(mtd_get_mac_ascii breed-env ethaddr) 2)"
+			print "\t\tath10k_patch_mac $(macaddr_add $(mtd_get_mac_binary art 0x0) 2)"
 			print "\t\tln -sf /lib/firmware/ath10k/pre-cal-pci-0000\\:00\\:00.0.bin \\"
 			print "\t\t\t/lib/firmware/ath10k/QCA9888/hw2.0/board.bin"
 			print "\t\t;;"
