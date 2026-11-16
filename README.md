@@ -35,9 +35,8 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 |---|---|---|
 | u-boot（Breed） | 0x000000 | 0x1e000 |
 | breed-env（Breed 内部环境变量，`ethaddr` 在 +0xc） | 0x01e000 | 0x1000 |
-| devicedata（原厂数据，未使用） | 0x0a0000 | 0x10000 |
-| art（2.4G 校准 +0x1000，5G 校准 +0x5000） | 0x0e0000 | 0x10000 |
-| firmware | 0x100000 | 0xf00000 |
+| firmware（Breed 默认自动启动 0x50000） | 0x050000 | 0xfa0000 |
+| art（2.4G 校准 +0x1000，5G 校准 +0x5000） | 0xff0000 | 0x10000 |
 
 ## MAC 地址
 
