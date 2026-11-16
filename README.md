@@ -48,6 +48,15 @@ MAC 来自 Breed 内部环境变量（Breed 网页 → 环境变量设置，选 
 - eth0 用 `ethaddr`，2.4G 用 +1，5G 用 +2
 - 若未设置 `ethaddr`，MAC 会读取失败，使用随机地址
 
+### WAN 口的 MAC
+
+五个网口都挂在同一个 `eth0` 上，由 QCA8337 交换芯片用 VLAN 划分。当前没有给 WAN 单独指定 MAC：
+
+- 未配置 WAN 时，`br-lan` 继承 `eth0` 的 MAC（`ethaddr`）。
+- 配置了 WAN（如 `eth0.2`）时，WAN 同样继承 `eth0` 的 MAC，与 LAN 相同。LAN 和 WAN 属于不同二层域，通常没有问题。
+- 需要不同的 WAN MAC（如运营商绑定 MAC）时，可在 LuCI 的 WAN 接口里手动设置，或在 `02_network` 中使用 `ucidef_set_interface_macaddr "wan" "$(macaddr_add $(cat /sys/class/net/eth0/address) 3)"`。
+- 2.4G 已用 +1，5G 已用 +2，所以 WAN 建议用 +3，避免重复。
+
 ## 尚未实测的项目
 
 - LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）
