@@ -47,7 +47,7 @@ jobs:
         env:
           EXTRA_CONFIG: ${{ inputs.extra_config }}
         run: |
-          ./apply.sh ./openwrt --config
+          bash ./apply.sh ./openwrt --config
           if [ -n "$EXTRA_CONFIG" ]; then
             printf '%b\n' "$EXTRA_CONFIG" >> openwrt/.config
             make -C openwrt defconfig

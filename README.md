@@ -47,4 +47,4 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 
 ## GitHub Actions
 
-ÍÆËÍµ½ GitHub ºó£¬ÔÚ Actions Ò³Ñ¡Ôñ **Build OpenWrt**£¬µã Run workflow£¬Ä¬ÈÏ·ÖÖ§ openwrt-24.10¡£Íê³ÉºóÔÚ Artifacts ÏÂÔØ initramfs-kernel ºÍ sysupgrade ¾µÏñ¡£
+æ¨é€åˆ° GitHub åï¼Œåœ¨ Actions é¡µé€‰æ‹© **Build OpenWrt**ï¼Œç‚¹ Run workflowï¼Œé»˜è®¤åˆ†æ”¯ openwrt-24.10ã€‚å®Œæˆååœ¨ Artifacts ä¸‹è½½ initramfs-kernel å’Œ sysupgrade é•œåƒã€‚
