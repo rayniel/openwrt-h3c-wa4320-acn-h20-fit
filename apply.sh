@@ -53,7 +53,7 @@ if ! grep -q "$BOARD" "$NET"; then
 			print
 			print "\t" b ")"
 			print "\t\tucidef_add_switch \"switch0\" \\"
-			print "\t\t\t\"0@eth0\" \"1:lan:1\" \"2:lan:2\" \"3:lan:3\" \"4:lan:4\""
+			print "\t\t\t\"0@eth0\" \"5:lan:1\" \"4:lan:2\" \"3:lan:3\" \"2:lan:4\" \"1:lan:5\""
 			print "\t\t;;"
 			done = 1
 			next
