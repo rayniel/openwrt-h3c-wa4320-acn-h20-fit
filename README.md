@@ -53,12 +53,13 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 - 需要不同的 WAN MAC（如运营商绑定 MAC）时，可在 LuCI 的 WAN 接口里手动设置，或在 `02_network` 中使用 `ucidef_set_interface_macaddr "wan" "$(macaddr_add $(cat /sys/class/net/eth0/address) 3)"`。
 - 2.4G 已用 +1，5G 已用 +2，所以 WAN 建议用 +3，避免重复。
 
-## 尚未实测的项目
+## 实测状态
 
-- LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）
-- 网口的链路速率和实际转发（目前只在 Breed 里验证了 PHY 链路状态）
-- 5G 的 PCIe 设备已实测为 QCA9888（168c:0056），使用 ath10k-firmware-qca9888-ct
-- 各 MAC 的递增规则已实现（eth0 +0，2.4G +1，5G +2），待实测
+已验证：Breed（K2T 布局）自动从 0x90000 启动、分区表、5G（QCA9888，ath10k-ct）、2.4G、MAC 来自 ART+0x0、overlay 持久化。
+
+- 启动时的 `fw_env.config` / `Failed to find NVMEM device` 提示无害（Breed 没有 U-Boot env）。
+- PoE IN 口（lan5）在 100M 交换机下为 100M，属正常。
+- 尚未确认：LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）。
 
 ## GitHub Actions
 
