@@ -64,3 +64,11 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 ## GitHub Actions
 
 推送到 GitHub 后，在 Actions 页选择 **Build OpenWrt**，点 Run workflow，默认分支 openwrt-24.10。完成后在 Artifacts 下载 initramfs-kernel 和 sysupgrade 镜像。
+
+## 从原厂固件提取 ART
+
+原厂 dump 中 ART 位于 0xE0000(64KB)。用脚本提取,并可写入 MAC(QSDK 格式:+0/+6/+0xc):
+
+    python extract_art.py W25Q128FV@SOIC8-h3c-h2.0.BIN art.bin --mac 74:85:C4:64:01:40
+
+刷入 Breed 时把 art.bin 写到 0xFF0000。
