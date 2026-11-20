@@ -1,26 +1,29 @@
 #!/usr/bin/env bash
 # Add H3C WA4320-ACN-H20-FIT support to an OpenWrt 24.10 source tree.
-# Usage: ./apply.sh /path/to/openwrt [--config] [--build]
-#   --config  write a minimal .config (ath79/generic + this device) and run defconfig
-#   --build   implies --config, then run "make download" and "make -jN"
+# Usage: ./apply.sh /path/to/openwrt [--no-config | --build]
 set -euo pipefail
 
 SRC="${1:-}"
 shift || true
 [ -n "$SRC" ] && [ -d "$SRC/target/linux/ath79" ] || {
-	echo "usage: $0 /path/to/openwrt-24.10 [--config] [--build]" >&2
+	echo "usage: $0 /path/to/openwrt-24.10 [--no-config | --build]" >&2
 	exit 1
 }
 
-DO_CONFIG=0
+DO_CONFIG=1
 DO_BUILD=0
 for a in "$@"; do
 	case "$a" in
-	--config) DO_CONFIG=1 ;;
-	--build) DO_CONFIG=1; DO_BUILD=1 ;;
+	--config) ;; # Kept for older callers; configuration is now the default.
+	--no-config) DO_CONFIG=0 ;;
+	--build) DO_BUILD=1 ;;
 	*) echo "unknown option: $a" >&2; exit 1 ;;
 	esac
 done
+if [ "$DO_CONFIG" = 0 ] && [ "$DO_BUILD" = 1 ]; then
+	echo "--no-config and --build cannot be combined" >&2
+	exit 1
+fi
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SRC="$(cd "$SRC" && pwd)"
@@ -29,8 +32,12 @@ DEV=h3c_wa4320-acn-h20-fit
 DTS=qca9563_h3c_wa4320-acn-h20-fit.dts
 MK="$SRC/target/linux/ath79/image/generic.mk"
 NET="$SRC/target/linux/ath79/generic/base-files/etc/board.d/02_network"
+ATH9K_PATCH=999-ath9k-h3c-wa4320-guard-otp.patch
+PATCH_DIR="$SRC/package/kernel/mac80211/patches/ath9k"
 
 cp "$HERE/files/$DTS" "$SRC/target/linux/ath79/dts/$DTS"
+cp "$HERE/files/$ATH9K_PATCH" "$PATCH_DIR/$ATH9K_PATCH"
+rm -f "$PATCH_DIR/999-h3c-wa4320-dc-diagnostic.patch"
 
 if ! grep -q "Device/$DEV\$" "$MK"; then
 	cat >>"$MK" <<'EOF'
@@ -39,11 +46,24 @@ define Device/h3c_wa4320-acn-h20-fit
   SOC := qca9563
   DEVICE_VENDOR := H3C
   DEVICE_MODEL := WA4320-ACN-H20-FIT
-  DEVICE_PACKAGES := kmod-usb2 nmap tcpdump mtr-nojson iperf3 ethtool bind-dig ip-full
+  DEVICE_PACKAGES := kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 nmap tcpdump mtr-nojson iperf3 ethtool bind-dig ip-full
   IMAGE_SIZE := 15744k
 endef
 TARGET_DEVICES += h3c_wa4320-acn-h20-fit
 EOF
+else
+	# Update trees already patched by the previous 5 GHz-disabled revision.
+	awk -v dev="$DEV" '
+		$0 == "define Device/" dev { device = 1 }
+		device && $1 == "DEVICE_PACKAGES" {
+			if ($0 !~ /[[:space:]]kmod-ath10k-ct([[:space:]]|$)/)
+				$0 = $0 " kmod-ath10k-ct"
+			if ($0 !~ /[[:space:]]ath10k-firmware-qca9888-ct([[:space:]]|$)/)
+				$0 = $0 " ath10k-firmware-qca9888-ct"
+		}
+		$0 == "endef" { device = 0 }
+		{ print }
+	' "$MK" >"$MK.tmp" && mv "$MK.tmp" "$MK"
 fi
 
 if ! grep -q "$BOARD" "$NET"; then
@@ -80,6 +100,10 @@ if ! grep -q "$BOARD" "$CAL"; then
 	' "$CAL" >"$CAL.tmp" && mv "$CAL.tmp" "$CAL"
 	chmod +x "$CAL"
 fi
+if ! grep -Fqx "$(printf '\t%s)' "$BOARD")" "$CAL"; then
+	echo "Failed to install QCA9888 ART calibration hook in $CAL" >&2
+	exit 1
+fi
 
 echo "patched $SRC"
 
@@ -90,8 +114,12 @@ CONFIG_TARGET_ath79_generic=y
 CONFIG_TARGET_ath79_generic_DEVICE_$DEV=y
 CONFIG_TARGET_MULTI_PROFILE=n
 CONFIG_TARGET_ROOTFS_INITRAMFS=y
+CONFIG_TARGET_ROOTFS_SQUASHFS=y
 CONFIG_PACKAGE_luci=y
 EOF
+	if [ -n "${EXTRA_CONFIG:-}" ]; then
+		printf '%b\n' "$EXTRA_CONFIG" >>"$SRC/.config"
+	fi
 	make -C "$SRC" defconfig
 fi
 

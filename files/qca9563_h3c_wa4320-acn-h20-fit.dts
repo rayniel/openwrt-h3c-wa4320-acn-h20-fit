@@ -109,9 +109,8 @@
 	};
 };
 
-/* 5G (QCA9888) disabled: PERST GPIO unknown, the chip is left running after a warm reset and corrupts the next boot */
 &pcie {
-	status = "disabled";
+	status = "okay";
 
 	wifi@0,0 {
 		compatible = "qcom,ath10k";

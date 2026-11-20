@@ -46,12 +46,7 @@ jobs:
       - name: Apply device support and configure
         env:
           EXTRA_CONFIG: ${{ inputs.extra_config }}
-        run: |
-          bash ./apply.sh ./openwrt --config
-          if [ -n "$EXTRA_CONFIG" ]; then
-            printf '%b\n' "$EXTRA_CONFIG" >> openwrt/.config
-            make -C openwrt defconfig
-          fi
+        run: bash ./apply.sh ./openwrt
 
       - name: Download sources
         working-directory: openwrt
@@ -65,7 +60,7 @@ jobs:
         run: |
           mkdir -p out
           cp openwrt/bin/targets/ath79/generic/*h3c_wa4320-acn-h20-fit* out/
-          cp openwrt/bin/targets/ath79/generic/sha256sums out/ || true
+          (cd out && sha256sum -- * > sha256sums)
           ls -l out
 
       - uses: actions/upload-artifact@v4

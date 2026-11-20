@@ -1,0 +1,91 @@
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -587,8 +587,13 @@
+ 	void *buf;
+ 	size_t len;
+ 	int err;
++	bool dc_diag = of_machine_is_compatible("h3c,wa4320-acn-h20-fit") &&
++		of_device_is_compatible(sc->dev->of_node, "qca,qca9560-wmac");
+ 
+ 	cell = devm_nvmem_cell_get(sc->dev, "calibration");
+ 	if (IS_ERR(cell)) {
+ 		err = PTR_ERR(cell);
++		if (dc_diag)
++			dev_info(sc->dev, "wa4320-dc: calibration cell lookup: %d\n",
++				 err);
+ 
+@@ -606,5 +611,13 @@
+ 	buf = nvmem_cell_read(cell, &len);
+-	if (IS_ERR(buf))
++	if (IS_ERR(buf)) {
++		if (dc_diag)
++			dev_info(sc->dev, "wa4320-dc: calibration cell read: %ld\n",
++				 PTR_ERR(buf));
+ 		return PTR_ERR(buf);
++	}
++
++	if (dc_diag)
++		dev_info(sc->dev, "wa4320-dc: calibration cell read %zu bytes\n",
++			 len);
+ 
+ 	/* run basic sanity checks on the returned nvram cell length.
+@@ -615,3 +628,6 @@
+ 	if ((len & 1) == 1 || len < 512 || len >= AR9300_EEPROM_SIZE) {
++		if (dc_diag)
++			dev_info(sc->dev, "wa4320-dc: invalid calibration length\n");
++
+ 		kfree(buf);
+ 		return -EINVAL;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -17,4 +17,5 @@
+ #include <linux/unaligned.h>
+ #include <linux/kernel.h>
++#include <linux/of.h>
+ #include "hw.h"
+ #include "ar9003_phy.h"
+@@ -3250,18 +3251,30 @@
+ 	struct ath_common *common = ath9k_hw_common(ah);
+ 	struct ar9300_eeprom *eep;
+ 	eeprom_read_op read;
++	bool dc_diag = of_machine_is_compatible("h3c,wa4320-acn-h20-fit") &&
++		of_device_is_compatible(ah->dev->of_node, "qca,qca9560-wmac");
+ 
+ 	if (ath9k_hw_use_flash(ah)) {
+ 		u8 txrx;
+ 
+-		if (ar9300_eeprom_restore_flash(ah, mptr, mdata_size))
++		if (ar9300_eeprom_restore_flash(ah, mptr, mdata_size)) {
++			if (dc_diag)
++				dev_info(ah->dev, "wa4320-dc: calibration restore failed\n");
+ 			return -EIO;
++		}
+ 
+ 		/* check if eeprom contains valid data */
+ 		eep = (struct ar9300_eeprom *) mptr;
+ 		txrx = eep->baseEepHeader.txrxMask;
++		if (dc_diag)
++			dev_info(ah->dev, "wa4320-dc: calibration txrxMask=0x%02x (%s)\n",
++				 txrx, (txrx != 0 && txrx != 0xff) ? "accepted" : "rejected");
+ 		if (txrx != 0 && txrx != 0xff)
+ 			return 0;
+ 	}
++
++	if (dc_diag)
++		dev_info(ah->dev, "wa4320-dc: falling back to EEPROM (NVMEM length=%zu)\n",
++			 ah->nvmem_blob_len);
+ 
+ 	word = kzalloc(2048, GFP_KERNEL);
+@@ -3293,6 +3306,12 @@
+ 	if (ar9300_check_eeprom_header(ah, read, cptr))
+ 		goto found;
+ 
++	if (dc_diag) {
++		dev_err(ah->dev, "wa4320-dc: skipping OTP MMIO; no usable calibration\n");
++		kfree(word);
++		return -EIO;
++	}
++
+ 	read = ar9300_read_otp;
+ 	cptr = AR9300_BASE_ADDR;
+ 	ath_dbg(common, EEPROM, "Trying OTP access at Address 0x%04x\n", cptr);

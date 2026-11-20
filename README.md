@@ -9,11 +9,11 @@ SoC 是 QCA9563，交换芯片是 QCA8337（SGMII 接 eth0），16MB SPI NOR（W
 
 ```sh
 git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
-./apply.sh ./openwrt --build     # 打补丁、生成 .config、下载源码并编译
+./apply.sh ./openwrt             # 打补丁、生成完整 .config 并执行 make defconfig
+./apply.sh ./openwrt --build     # 同上，并下载源码和编译
 ```
 
-只打补丁用 `./apply.sh ./openwrt`；打补丁并生成 `.config`（之后自己 `make menuconfig`）用 `--config`。
-脚本可重复执行。镜像生成在 `bin/targets/ath79/generic/`。
+默认启用 2.4 GHz 和 5 GHz，不需要运行 `make menuconfig`。脚本会覆盖 OpenWrt 源码树里的 `.config`；只打补丁用 `--no-config`。编译后在 OpenWrt 的 `bin/targets/ath79/generic/` 生成 initramfs 和 sysupgrade 镜像。
 
 ## 脚本做了什么
 
@@ -59,11 +59,13 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 
 - 启动时的 `fw_env.config` / `Failed to find NVMEM device` 提示无害（Breed 没有 U-Boot env）。
 - PoE IN 口（lan5）在 100M 交换机下为 100M，属正常。
+- DC 冷启动的 2.4 GHz 初始化问题仍待验证。用构建生成的 initramfs 从 Breed 加载到 RAM，保持同一份 ART，分别用 PoE 和 DC 冷启动，保存包含 `wa4320-dc:` 的串口日志。校准数据无法使用时，驱动会跳过有风险的 OTP 读取并报错退出；这不代表 DC 下的无线已经恢复。
+- 5 GHz 的暖重启复位问题尚未确认解决。
 - 尚未确认：LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）。
 
 ## GitHub Actions
 
-推送到 GitHub 后，在 Actions 页选择 **Build OpenWrt**，点 Run workflow，默认分支 openwrt-24.10。完成后在 Artifacts 下载 initramfs-kernel 和 sysupgrade 镜像。
+推送到 GitHub 后，在 Actions 页选择 **Build OpenWrt** → **Run workflow**。上游默认分支是 `openwrt-24.10`；构建产物包含 initramfs、sysupgrade 和校验和。
 
 ## 从原厂固件提取 ART
 
