@@ -69,6 +69,10 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 - 5 GHz 的暖重启复位问题尚未确认解决。
 - 已实测 SYS 绿灯为 GPIO 8、低电平点亮，SYS 黄灯为 GPIO 7、高电平点亮。GPIO 6 和独立 WiFi 指示灯的实际连接尚未确认。
 
+## 临时 QCA8337 原子 MDIO 测试工具
+
+源码、构建方法和上机步骤见 [tools/qca8337-atomic/README.md](./tools/qca8337-atomic/README.md)。在已有的 OpenWrt 24.10 构建树上运行 `make -C tools/qca8337-atomic`，生成临时内核模块和 MIPS 命令行客户端；模块不自动加载，也不包含在固件中。读操作限于对齐的交换机寄存器地址，写操作仅允许 LED_CTRL0-3，并且需要 root 与 `CAP_SYS_RAWIO`。上机前必须确认模块与正在运行的内核构建完全匹配；首次只读采集寄存器值。
+
 ## GitHub Actions
 
 推送到 GitHub 后，在 Actions 页选择 **Build OpenWrt** → **Run workflow**。上游默认分支是 `openwrt-24.10`；构建产物包含 initramfs、sysupgrade 和校验和。
