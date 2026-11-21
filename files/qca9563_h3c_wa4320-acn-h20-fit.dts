@@ -21,23 +21,17 @@
 	leds {
 		compatible = "gpio-leds";
 
-		/* GPIO names taken from Breed: 6 "sys", 7 "red", 8 "green"; polarity untested */
+		/* SYS green and amber GPIOs and polarities verified on the device. */
 		led_sys: sys {
 			function = LED_FUNCTION_STATUS;
 			color = <LED_COLOR_ID_GREEN>;
-			gpios = <&gpio 6 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio 8 GPIO_ACTIVE_LOW>;
 		};
 
 		led_red: red {
 			function = LED_FUNCTION_FAULT;
-			color = <LED_COLOR_ID_RED>;
+			color = <LED_COLOR_ID_AMBER>;
 			gpios = <&gpio 7 GPIO_ACTIVE_HIGH>;
-		};
-
-		green {
-			function = LED_FUNCTION_LAN;
-			color = <LED_COLOR_ID_GREEN>;
-			gpios = <&gpio 8 GPIO_ACTIVE_LOW>;
 		};
 	};
 

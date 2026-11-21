@@ -61,7 +61,7 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 - PoE IN 口（lan5）在 100M 交换机下为 100M，属正常。
 - DC 冷启动的 2.4 GHz 初始化问题仍待验证。用构建生成的 initramfs 从 Breed 加载到 RAM，保持同一份 ART，分别用 PoE 和 DC 冷启动，保存包含 `wa4320-dc:` 的串口日志。校准数据无法使用时，驱动会跳过有风险的 OTP 读取并报错退出；这不代表 DC 下的无线已经恢复。
 - 5 GHz 的暖重启复位问题尚未确认解决。
-- 尚未确认：LED 的 GPIO 极性（GPIO 6/7/8 来自 Breed）。
+- 已实测 SYS 绿灯为 GPIO 8、低电平点亮，SYS 黄灯为 GPIO 7、高电平点亮。GPIO 6 和独立 WiFi 指示灯的实际连接尚未确认。
 
 ## GitHub Actions
 
