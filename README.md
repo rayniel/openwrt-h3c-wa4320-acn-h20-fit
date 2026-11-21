@@ -15,6 +15,12 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 
 默认启用 2.4 GHz 和 5 GHz，不需要运行 `make menuconfig`。脚本会覆盖 OpenWrt 源码树里的 `.config`；只打补丁用 `--no-config`。编译后在 OpenWrt 的 `bin/targets/ath79/generic/` 生成 initramfs 和 sysupgrade 镜像。
 
+## USB 和串口驱动
+
+默认固件包含 USB 2.0 主机和 USB 大容量存储驱动，以及 CDC ACM 和常见 USB 转串口驱动：CH341、CH348、CP210x、FTDI、PL2303 和 Exar/MaxLinear XR（`kmod-usb-serial-xr_usb_serial_common`，来自 OpenWrt 24.10 packages feed）。构建前需安装 feeds；脚本没有额外指定文件系统驱动或自动挂载工具。
+
+USB 控制器已在设备上注册，但此前插入 U 盘时只看到 root hub，没有枚举外部设备；加入驱动并不能确认解决此问题。刷入新固件后可插入设备并用 `dmesg` 查看枚举及驱动加载情况，串口设备通常显示为 `/dev/ttyUSB*` 或 `/dev/ttyACM*`。
+
 ## 脚本做了什么
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`

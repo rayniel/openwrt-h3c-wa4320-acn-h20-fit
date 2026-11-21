@@ -34,6 +34,7 @@ MK="$SRC/target/linux/ath79/image/generic.mk"
 NET="$SRC/target/linux/ath79/generic/base-files/etc/board.d/02_network"
 ATH9K_PATCH=999-ath9k-h3c-wa4320-guard-otp.patch
 PATCH_DIR="$SRC/package/kernel/mac80211/patches/ath9k"
+DRIVER_PACKAGES="kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 kmod-usb-storage kmod-usb-acm kmod-usb-serial kmod-usb-serial-ch341 kmod-usb-serial-ch348 kmod-usb-serial-cp210x kmod-usb-serial-ftdi kmod-usb-serial-pl2303 kmod-usb-serial-xr_usb_serial_common"
 
 cp "$HERE/files/$DTS" "$SRC/target/linux/ath79/dts/$DTS"
 cp "$HERE/files/$ATH9K_PATCH" "$PATCH_DIR/$ATH9K_PATCH"
@@ -46,25 +47,25 @@ define Device/h3c_wa4320-acn-h20-fit
   SOC := qca9563
   DEVICE_VENDOR := H3C
   DEVICE_MODEL := WA4320-ACN-H20-FIT
-  DEVICE_PACKAGES := kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 nmap tcpdump mtr-nojson iperf3 ethtool bind-dig ip-full
+  DEVICE_PACKAGES := nmap tcpdump mtr-nojson iperf3 ethtool bind-dig ip-full
   IMAGE_SIZE := 15744k
 endef
 TARGET_DEVICES += h3c_wa4320-acn-h20-fit
 EOF
-else
-	# Update trees already patched by the previous 5 GHz-disabled revision.
-	awk -v dev="$DEV" '
-		$0 == "define Device/" dev { device = 1 }
-		device && $1 == "DEVICE_PACKAGES" {
-			if ($0 !~ /[[:space:]]kmod-ath10k-ct([[:space:]]|$)/)
-				$0 = $0 " kmod-ath10k-ct"
-			if ($0 !~ /[[:space:]]ath10k-firmware-qca9888-ct([[:space:]]|$)/)
-				$0 = $0 " ath10k-firmware-qca9888-ct"
-		}
-		$0 == "endef" { device = 0 }
-		{ print }
-	' "$MK" >"$MK.tmp" && mv "$MK.tmp" "$MK"
 fi
+
+awk -v dev="$DEV" -v packages="$DRIVER_PACKAGES" '
+	BEGIN { count = split(packages, required, " ") }
+	$0 == "define Device/" dev { device = 1 }
+	device && $1 == "DEVICE_PACKAGES" {
+		for (i = 1; i <= count; i++) {
+			if ((" " $0 " ") !~ ("[[:space:]]" required[i] "[[:space:]]"))
+				$0 = $0 " " required[i]
+		}
+	}
+	$0 == "endef" { device = 0 }
+	{ print }
+' "$MK" >"$MK.tmp" && mv "$MK.tmp" "$MK"
 
 if ! grep -q "$BOARD" "$NET"; then
 	# insert ahead of the first board case in ath79_setup_interfaces()
