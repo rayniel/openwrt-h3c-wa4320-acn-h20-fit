@@ -33,6 +33,12 @@
 			color = <LED_COLOR_ID_AMBER>;
 			gpios = <&gpio 7 GPIO_ACTIVE_HIGH>;
 		};
+
+		wlan {
+			function = LED_FUNCTION_WLAN;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&gpio 19 GPIO_ACTIVE_LOW>;
+		};
 	};
 
 	keys {
@@ -133,6 +139,10 @@
 
 		qca,ar8327-initvals = <
 			0x04 0x00080080 /* PORT0 PAD MODE CTRL */
+			0x50 0xc731c731 /* LED_CTRL0: link and activity */
+			0x54 0xc335c335 /* LED_CTRL1: 10/100M and activity */
+			0x58 0x0f350f35 /* LED_CTRL2: disabled for PHY0/4 */
+			0x5c 0x00f3cf00 /* LED_CTRL3: disable LED2 for PHY1-3 */
 			0x7c 0x0000007e /* PORT0_STATUS */
 		>;
 	};

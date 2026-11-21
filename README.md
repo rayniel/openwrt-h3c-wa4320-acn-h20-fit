@@ -24,6 +24,7 @@ USB 控制器已在设备上注册，但此前插入 U 盘时只看到 root hub�
 ## 脚本做了什么
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`
+- 安装本机 WiFi 灯控制包：任一无线频段运行时绿灯闪烁，全部关闭时熄灭；状态每 2 秒检查一次。无线状态读取失败时保留上一次灯效并记录系统日志；不要同时用 LuCI 配置同一盏 `green:wlan` 灯。
 - 向 `image/generic.mk` 追加设备定义（firmware 分区 15744k）
 - 向 `02_network` 添加交换机配置，已用 Breed 的 MDIO 实测端口对应关系：
 
@@ -65,9 +66,10 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 
 - 启动时的 `fw_env.config` / `Failed to find NVMEM device` 提示无害（Breed 没有 U-Boot env）。
 - PoE IN 口（lan5）在 100M 交换机下为 100M，属正常。
+- QCA8337 网口灯规则已通过临时寄存器测试：面板 1 和 PoE IN 千兆为绿色闪烁，面板 2 百兆为黄色闪烁；面板 2 拔线及其他未接线口熄灯。规则已加入设备树，包含该规则的新固件尚未实测。面板 3、4、10M 链路及百兆实际流量下的灯效仍待验证。
 - DC 冷启动的 2.4 GHz 初始化问题仍待验证。用构建生成的 initramfs 从 Breed 加载到 RAM，保持同一份 ART，分别用 PoE 和 DC 冷启动，保存包含 `wa4320-dc:` 的串口日志。校准数据无法使用时，驱动会跳过有风险的 OTP 读取并报错退出；这不代表 DC 下的无线已经恢复。
 - 5 GHz 的暖重启复位问题尚未确认解决。
-- 已实测 SYS 绿灯为 GPIO 8、低电平点亮，SYS 黄灯为 GPIO 7、高电平点亮。GPIO 6 和独立 WiFi 指示灯的实际连接尚未确认。
+- 已实测 SYS 绿灯为 GPIO 8、低电平点亮，SYS 黄灯为 GPIO 7、高电平点亮；独立 WiFi 绿灯为 GPIO 19、低电平点亮。新固件中的双频触发规则尚未实机验证。
 
 ## 临时 QCA8337 原子 MDIO 测试工具
 

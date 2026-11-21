@@ -34,10 +34,13 @@ MK="$SRC/target/linux/ath79/image/generic.mk"
 NET="$SRC/target/linux/ath79/generic/base-files/etc/board.d/02_network"
 ATH9K_PATCH=999-ath9k-h3c-wa4320-guard-otp.patch
 PATCH_DIR="$SRC/package/kernel/mac80211/patches/ath9k"
-DRIVER_PACKAGES="kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 kmod-usb-storage kmod-usb-acm kmod-usb-serial kmod-usb-serial-ch341 kmod-usb-serial-ch348 kmod-usb-serial-cp210x kmod-usb-serial-ftdi kmod-usb-serial-pl2303 kmod-usb-serial-xr_usb_serial_common"
+DRIVER_PACKAGES="wa4320-wifi-led kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 kmod-usb-storage kmod-usb-acm kmod-usb-serial kmod-usb-serial-ch341 kmod-usb-serial-ch348 kmod-usb-serial-cp210x kmod-usb-serial-ftdi kmod-usb-serial-pl2303 kmod-usb-serial-xr_usb_serial_common"
 
 cp "$HERE/files/$DTS" "$SRC/target/linux/ath79/dts/$DTS"
 cp "$HERE/files/$ATH9K_PATCH" "$PATCH_DIR/$ATH9K_PATCH"
+mkdir -p "$SRC/package/wa4320-wifi-led/files"
+cp "$HERE/files/wa4320-wifi-led/Makefile" "$SRC/package/wa4320-wifi-led/Makefile"
+cp "$HERE/files/wa4320-wifi-led/files/"* "$SRC/package/wa4320-wifi-led/files/"
 rm -f "$PATCH_DIR/999-h3c-wa4320-dc-diagnostic.patch"
 
 if ! grep -q "Device/$DEV\$" "$MK"; then
