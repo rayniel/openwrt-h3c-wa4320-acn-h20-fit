@@ -54,5 +54,7 @@ QCA8337 的 32 位交换机寄存器通过分页 MDIO 窗口访问。OpenWrt 的
 
 - DC 冷启动曾在 ath9k OTP 回退读取时发生总线错误。现有板级保护和日志是防护/诊断，不是已验证的根因修复。此前 DC 成功启动时日志显示校准数据读到 1088 字节、`txrxMask=0x33` 被接受。
 - USB 控制器已注册，但先前插入 U 盘只看到 root hub、没有枚举外部设备；增加驱动不等于已解决。
+- 当前 DC 供电下，U 盘在电脑上可识别；临时将候选 USB 电源 GPIO 21 拉低后仍无枚举，测试结束已恢复输入并取消导出。原厂驱动中只有部分板型使用该 GPIO，不能据此认定本机接线或 USB 供电状态。
+- 已提供 `apply.sh --no-config --test-usb1` 测试选项，同时启用 USB0/USB1 及其 PHY；测试镜像只应通过 Breed 从 RAM 启动，USB1 是否连到接口尚未验证。恢复常规设备树时重新运行 `apply.sh --no-config`。
 - sysupgrade 时旧 JFFS2 overlay 曾报 `Resource busy` 和 `Busy inodes`，随后升级报告完成。新系统已冷启动，SSH 可用，当前 `/overlay` 为读写 JFFS2，当前启动未见同类警告；配置持久性尚未单独确认。
 - 保留本机原厂 ART，不要擦除或上传。未经用户同意不要刷写、重启或修改设备持久配置。

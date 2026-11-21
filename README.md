@@ -21,6 +21,17 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 
 USB 控制器已在设备上注册，但此前插入 U 盘时只看到 root hub，没有枚举外部设备；加入驱动并不能确认解决此问题。刷入新固件后可插入设备并用 `dmesg` 查看枚举及驱动加载情况，串口设备通常显示为 `/dev/ttyUSB*` 或 `/dev/ttyACM*`。
 
+### 第二 USB 控制器的临时测试
+
+QCA9563 的 USB1 是否连接到面板接口尚未确认。待当前编译结束后，可在保留现有配置的情况下，为测试构建同时启用 USB0 和 USB1：
+
+```sh
+./apply.sh ./openwrt --no-config --test-usb1
+make -C ./openwrt -j"$(nproc)"
+```
+
+仅用生成的 initramfs 镜像从 Breed 加载到 RAM 测试，**不要刷写测试镜像**。该选项不会设置尚未证实的 USB 电源 GPIO。恢复正常构建时重新运行 `./apply.sh ./openwrt --no-config`，再编译。
+
 ## 脚本做了什么
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`

@@ -113,8 +113,18 @@ def test_apply(temp):
     for name in ("Makefile", "files/wa4320-wifi-led.init", "files/wa4320-wifi-led.sh"):
         assert (tree / "package/wa4320-wifi-led" / name).read_bytes() == (
             ROOT / "files/wa4320-wifi-led" / name).read_bytes()
-    assert (tree / "target/linux/ath79/dts/qca9563_h3c_wa4320-acn-h20-fit.dts").read_bytes() == (
-        ROOT / "files/qca9563_h3c_wa4320-acn-h20-fit.dts").read_bytes()
+    dts = tree / "target/linux/ath79/dts/qca9563_h3c_wa4320-acn-h20-fit.dts"
+    original_dts = (ROOT / "files/qca9563_h3c_wa4320-acn-h20-fit.dts").read_bytes()
+    assert dts.read_bytes() == original_dts
+    addition = (b'\n&usb_phy1 {\n\tstatus = "okay";\n};\n'
+                b'\n&usb1 {\n\tstatus = "okay";\n};\n')
+    for _ in range(2):
+        subprocess.run([BASH, shell_path(ROOT / "apply.sh"), shell_path(tree),
+                        "--no-config", "--test-usb1"], check=True, timeout=30)
+        assert dts.read_bytes() == original_dts + addition
+    subprocess.run([BASH, shell_path(ROOT / "apply.sh"), shell_path(tree), "--no-config"],
+                   check=True, timeout=30)
+    assert dts.read_bytes() == original_dts
 
 
 if __name__ == "__main__":

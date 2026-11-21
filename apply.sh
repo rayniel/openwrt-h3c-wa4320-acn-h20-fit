@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
 # Add H3C WA4320-ACN-H20-FIT support to an OpenWrt 24.10 source tree.
-# Usage: ./apply.sh /path/to/openwrt [--no-config | --build]
+# Usage: ./apply.sh /path/to/openwrt [--no-config | --build] [--test-usb1]
 set -euo pipefail
 
 SRC="${1:-}"
 shift || true
 [ -n "$SRC" ] && [ -d "$SRC/target/linux/ath79" ] || {
-	echo "usage: $0 /path/to/openwrt-24.10 [--no-config | --build]" >&2
+	echo "usage: $0 /path/to/openwrt-24.10 [--no-config | --build] [--test-usb1]" >&2
 	exit 1
 }
 
 DO_CONFIG=1
 DO_BUILD=0
+TEST_USB1=0
 for a in "$@"; do
 	case "$a" in
 	--config) ;; # Kept for older callers; configuration is now the default.
 	--no-config) DO_CONFIG=0 ;;
 	--build) DO_BUILD=1 ;;
+	--test-usb1) TEST_USB1=1 ;;
 	*) echo "unknown option: $a" >&2; exit 1 ;;
 	esac
 done
@@ -37,6 +39,18 @@ PATCH_DIR="$SRC/package/kernel/mac80211/patches/ath9k"
 DRIVER_PACKAGES="wa4320-wifi-led kmod-ath10k-ct ath10k-firmware-qca9888-ct kmod-usb2 kmod-usb-storage kmod-usb-acm kmod-usb-serial kmod-usb-serial-ch341 kmod-usb-serial-ch348 kmod-usb-serial-cp210x kmod-usb-serial-ftdi kmod-usb-serial-pl2303 kmod-usb-serial-xr_usb_serial_common"
 
 cp "$HERE/files/$DTS" "$SRC/target/linux/ath79/dts/$DTS"
+if [ "$TEST_USB1" = 1 ]; then
+	cat >>"$SRC/target/linux/ath79/dts/$DTS" <<'EOF'
+
+&usb_phy1 {
+	status = "okay";
+};
+
+&usb1 {
+	status = "okay";
+};
+EOF
+fi
 cp "$HERE/files/$ATH9K_PATCH" "$PATCH_DIR/$ATH9K_PATCH"
 mkdir -p "$SRC/package/wa4320-wifi-led/files"
 cp "$HERE/files/wa4320-wifi-led/Makefile" "$SRC/package/wa4320-wifi-led/Makefile"
