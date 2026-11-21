@@ -1,0 +1,27 @@
+From: Kosuke Shibuya <kakiringopcneko@gmail.com>
+Subject: jffs2: release the whiteout inode reference
+
+Backport the whiteout reference fix proposed for OpenWrt's JFFS2 patch.
+Unlike the normal mknod path, the whiteout path does not transfer the
+new inode reference to a dentry.
+
+Link: https://github.com/openwrt/openwrt/issues/25025
+Link: https://github.com/openwrt/openwrt/pull/26520
+Signed-off-by: Kosuke Shibuya <kakiringopcneko@gmail.com>
+---
+--- a/fs/jffs2/dir.c
++++ b/fs/jffs2/dir.c
+@@ -758,9 +758,11 @@ static int __jffs2_mknod (struct mnt_idmap *idmap, struct inode *dir_i,
+ 	mutex_unlock(&dir_f->sem);
+ 	jffs2_complete_reservation(c);
+ 
+-	if (!whiteout)
++	if (!whiteout) {
+ 		d_instantiate_new(dentry, inode);
+-	else
++	} else {
+ 		unlock_new_inode(inode);
++		iput(inode);
++	}
+ 
+ 	return 0;

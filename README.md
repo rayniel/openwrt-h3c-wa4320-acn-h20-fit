@@ -19,11 +19,11 @@ git clone -b openwrt-24.10 https://github.com/openwrt/openwrt.git
 
 默认固件包含 USB 2.0 主机和 USB 大容量存储驱动，以及 CDC ACM 和常见 USB 转串口驱动：CH341、CH348、CP210x、FTDI、PL2303 和 Exar/MaxLinear XR（`kmod-usb-serial-xr_usb_serial_common`，来自 OpenWrt 24.10 packages feed）。构建前需安装 feeds；脚本没有额外指定文件系统驱动或自动挂载工具。
 
-USB 控制器已在设备上注册，但此前插入 U 盘时只看到 root hub，没有枚举外部设备；加入驱动并不能确认解决此问题。刷入新固件后可插入设备并用 `dmesg` 查看枚举及驱动加载情况，串口设备通常显示为 `/dev/ttyUSB*` 或 `/dev/ttyACM*`。
+设备当前运行的 USB1 测试固件中，两个控制器都已注册，但重新插入 U 盘仍只看到 root hub。只读检查发现两个控制器引用了同一个 PHY 节点，其复位线路属于 USB1。设备树已修正 USB0 的 PHY 复位线路，并为 USB1 测试使用独立 PHY；该修改尚未构建或实机验证，不能确认已解决枚举问题。串口设备识别后通常显示为 `/dev/ttyUSB*` 或 `/dev/ttyACM*`。
 
 ### 第二 USB 控制器的临时测试
 
-QCA9563 的 USB1 是否连接到面板接口尚未确认。待当前编译结束后，可在保留现有配置的情况下，为测试构建同时启用 USB0 和 USB1：
+QCA9563 的 USB1 是否连接到面板接口尚未确认。可在保留现有配置的情况下，为测试构建同时启用 USB0 和 USB1：
 
 ```sh
 ./apply.sh ./openwrt --no-config --test-usb1
@@ -35,7 +35,8 @@ make -C ./openwrt -j"$(nproc)"
 ## 脚本做了什么
 
 - 复制 `files/qca9563_h3c_wa4320-acn-h20-fit.dts` 到 `target/linux/ath79/dts/`
-- 安装本机 WiFi 灯控制包：任一无线频段运行时绿灯闪烁，全部关闭时熄灭；状态每 2 秒检查一次。无线状态读取失败时保留上一次灯效并记录系统日志；不要同时用 LuCI 配置同一盏 `green:wlan` 灯。
+- 安装本机 WiFi 灯控制包：任一无线频段运行时绿灯闪烁，全部关闭时熄灭。每 2 秒合计无线接口的收发速率，流量越高闪烁越快；低于 16 KiB/s 时亮、灭各 500 毫秒，其他分档阈值为 128 KiB/s、512 KiB/s、2 MiB/s、8 MiB/s 和 32 MiB/s。状态或计数读取失败时保留上一次灯效并记录系统日志；不要同时用 LuCI 配置同一盏 `green:wlan` 灯。
+- 为 ath79 的 Linux 6.6 添加 JFFS2 whiteout 引用计数修复，参考尚未合并的 [openwrt/openwrt#26520](https://github.com/openwrt/openwrt/pull/26520)；该补丁仍需本机编译和实机验证。
 - 向 `image/generic.mk` 追加设备定义（firmware 分区 15744k）
 - 向 `02_network` 添加交换机配置，已用 Breed 的 MDIO 实测端口对应关系：
 
@@ -81,6 +82,7 @@ MAC 来自 ART 开头的基础 MAC（ART+0x0，6 字节）。Breed 网页选 QSD
 - DC 冷启动的 2.4 GHz 初始化问题仍待验证。用构建生成的 initramfs 从 Breed 加载到 RAM，保持同一份 ART，分别用 PoE 和 DC 冷启动，保存包含 `wa4320-dc:` 的串口日志。校准数据无法使用时，驱动会跳过有风险的 OTP 读取并报错退出；这不代表 DC 下的无线已经恢复。
 - 5 GHz 的暖重启复位问题尚未确认解决。
 - 已实测 SYS 绿灯为 GPIO 8、低电平点亮，SYS 黄灯为 GPIO 7、高电平点亮；独立 WiFi 绿灯为 GPIO 19、低电平点亮。新固件中的双频触发规则尚未实机验证。
+- 网页升级切换到 RAM 时曾出现 JFFS2 `Busy inodes` 警告，但升级报告完成，新系统的 overlay 已读写挂载。已加入候选引用计数修复；该修复不保证消除另一个 `Resource busy` 提示，也尚未验证配置跨升级持久性。
 
 ## 临时 QCA8337 原子 MDIO 测试工具
 

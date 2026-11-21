@@ -51,6 +51,15 @@
 			debounce-interval = <60>;
 		};
 	};
+
+	/* qca956x.dtsi merges its two usb-phy labels into one node. */
+	usb_phy1_h3c: usb-phy1 {
+		compatible = "qca,qca9560-usb-phy", "qca,ar7200-usb-phy";
+		reset-names = "usb-phy", "usb-suspend-override";
+		resets = <&rst2 4>, <&rst2 3>;
+		#phy-cells = <0>;
+		status = "disabled";
+	};
 };
 
 &spi {
@@ -121,6 +130,7 @@
 };
 
 &usb_phy0 {
+	resets = <&rst 4>, <&rst 3>;
 	status = "okay";
 };
 

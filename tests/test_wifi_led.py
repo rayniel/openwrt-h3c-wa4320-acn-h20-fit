@@ -19,8 +19,11 @@ def shell_path(path):
 def test_led_states(temp):
     led = temp / "led"
     commands = temp / "bin"
+    net = temp / "net"
     led.mkdir()
     commands.mkdir()
+    net.mkdir()
+    (temp / "uptime").write_text("10.00 0.00\n")
     for name in ("trigger", "brightness", "delay_on", "delay_off"):
         (led / name).write_text("")
     (temp / "step").write_text("0")
@@ -62,11 +65,14 @@ printf '%s:%s:%s:%s\\n' "$step" "$(cat "$TEST_LED/trigger")" \\
   "$(cat "$TEST_LED/delay_on")" "$(cat "$TEST_LED/delay_off")" >> "$TEST_TMP/out"
 step=$((step + 1))
 printf '%s\\n' "$step" > "$TEST_TMP/step"
+printf '%s.00 0.00\\n' "$((10 + step * 2))" > "$TEST_TMP/uptime"
 if [ "$step" -ge 12 ]; then kill -TERM "$PPID"; fi
 """)
     script = temp / "wifi-led.sh"
     original = (ROOT / "files/wa4320-wifi-led/files/wa4320-wifi-led.sh").read_text()
-    script.write_text(original.replace("led=/sys/class/leds/green:wlan", 'led="$TEST_LED"'))
+    script.write_text(original.replace("led=/sys/class/leds/green:wlan", 'led="$TEST_LED"')
+                      .replace("net_dir=/sys/class/net", 'net_dir="$TEST_TMP/net"')
+                      .replace("uptime_file=/proc/uptime", 'uptime_file="$TEST_TMP/uptime"'))
     env = os.environ.copy()
     env.update(TEST_TMP=shell_path(temp), TEST_LED=shell_path(led),
                TEST_BIN=shell_path(commands), TEST_SCRIPT=shell_path(script))
@@ -91,6 +97,71 @@ if [ "$step" -ge 12 ]; then kill -TERM "$PPID"; fi
     assert "wireless status has missing radio states" in log
 
 
+def test_led_traffic(temp):
+    led = temp / "traffic-led"
+    commands = temp / "traffic-bin"
+    net = temp / "traffic-net"
+    led.mkdir()
+    commands.mkdir()
+    for name in ("trigger", "brightness", "delay_on", "delay_off"):
+        (led / name).write_text("")
+    for name in ("wifi0", "wifi1"):
+        (net / name / "phy80211").mkdir(parents=True)
+        (net / name / "statistics").mkdir()
+        for field in ("rx_bytes", "tx_bytes"):
+            (net / name / "statistics" / field).write_bytes(b"0\n")
+    (temp / "traffic-step").write_text("0")
+    (temp / "traffic-uptime").write_text("10.00 0.00\n")
+    (commands / "ubus").write_text("#!/bin/sh\nprintf 'true\\ntrue\\n'\n")
+    (commands / "jsonfilter").write_text("#!/bin/sh\ncat\n")
+    (commands / "logger").write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$TEST_TMP/traffic-log"\n')
+    (commands / "sleep").write_text("""#!/bin/sh
+step="$(cat "$TEST_TMP/traffic-step")"
+printf '%s:%s:%s\\n' "$step" "$(cat "$TEST_LED/trigger")" \\
+  "$(cat "$TEST_LED/delay_on")" >> "$TEST_TMP/traffic-out"
+case "$step" in
+0) echo 32766 > "$TEST_NET/wifi0/statistics/rx_bytes" ;;
+1) echo 65534 > "$TEST_NET/wifi0/statistics/rx_bytes" ;;
+2) echo 196606 > "$TEST_NET/wifi0/statistics/rx_bytes"
+   echo 131072 > "$TEST_NET/wifi1/statistics/tx_bytes" ;;
+3) echo 1179648 > "$TEST_NET/wifi1/statistics/tx_bytes" ;;
+4) echo 5373952 > "$TEST_NET/wifi1/statistics/tx_bytes" ;;
+5) echo 22151168 > "$TEST_NET/wifi1/statistics/tx_bytes" ;;
+6) echo 89260032 > "$TEST_NET/wifi1/statistics/tx_bytes" ;;
+7) rm "$TEST_NET/wifi0/statistics/rx_bytes" ;;
+8) echo 0 > "$TEST_NET/wifi0/statistics/rx_bytes"
+   echo 0 > "$TEST_NET/wifi1/statistics/tx_bytes" ;;
+9) rmdir "$TEST_NET/wifi1/phy80211" ;;
+esac
+step=$((step + 1))
+printf '%s\\n' "$step" > "$TEST_TMP/traffic-step"
+printf '%s.00 0.00\\n' "$((10 + step * 2))" > "$TEST_TMP/traffic-uptime"
+if [ "$step" -ge 12 ]; then kill -TERM "$PPID"; fi
+""")
+    script = temp / "traffic-wifi-led.sh"
+    original = (ROOT / "files/wa4320-wifi-led/files/wa4320-wifi-led.sh").read_text()
+    script.write_text(original.replace("led=/sys/class/leds/green:wlan", 'led="$TEST_LED"')
+                      .replace("net_dir=/sys/class/net", 'net_dir="$TEST_NET"')
+                      .replace("uptime_file=/proc/uptime", 'uptime_file="$TEST_TMP/traffic-uptime"'))
+    env = os.environ.copy()
+    env.update(TEST_TMP=shell_path(temp), TEST_LED=shell_path(led), TEST_NET=shell_path(net),
+               TEST_BIN=shell_path(commands), TEST_SCRIPT=shell_path(script))
+    subprocess.run(
+        [BASH, "-c", 'chmod +x "$TEST_BIN/"*; PATH="$TEST_BIN:/usr/bin:/bin"; '
+                     'export PATH; exec sh "$TEST_SCRIPT"'],
+        env=env, check=True, timeout=30,
+    )
+    expected = [
+        "0:timer:500", "1:timer:500", "2:timer:350", "3:timer:250",
+        "4:timer:150", "5:timer:100", "6:timer:60", "7:timer:40",
+        "8:timer:40", "9:timer:500", "10:timer:500", "11:timer:500",
+    ]
+    assert (temp / "traffic-out").read_text().splitlines() == expected
+    assert "failed to read WiFi counters for wifi0" in (temp / "traffic-log").read_text()
+    assert (led / "trigger").read_text().strip() == "none"
+    assert (led / "brightness").read_text().strip() == "0"
+
+
 def test_apply(temp):
     tree = temp / "openwrt"
     (tree / "target/linux/ath79/dts").mkdir(parents=True)
@@ -113,11 +184,14 @@ def test_apply(temp):
     for name in ("Makefile", "files/wa4320-wifi-led.init", "files/wa4320-wifi-led.sh"):
         assert (tree / "package/wa4320-wifi-led" / name).read_bytes() == (
             ROOT / "files/wa4320-wifi-led" / name).read_bytes()
+    patch = "999-ath79-jffs2-whiteout-refcount.patch"
+    assert (tree / "target/linux/ath79/patches-6.6" / patch).read_bytes() == (
+        ROOT / "files" / patch).read_bytes()
     dts = tree / "target/linux/ath79/dts/qca9563_h3c_wa4320-acn-h20-fit.dts"
     original_dts = (ROOT / "files/qca9563_h3c_wa4320-acn-h20-fit.dts").read_bytes()
     assert dts.read_bytes() == original_dts
-    addition = (b'\n&usb_phy1 {\n\tstatus = "okay";\n};\n'
-                b'\n&usb1 {\n\tstatus = "okay";\n};\n')
+    addition = (b'\n&usb_phy1_h3c {\n\tstatus = "okay";\n};\n'
+                b'\n&usb1 {\n\tphys = <&usb_phy1_h3c>;\n\tstatus = "okay";\n};\n')
     for _ in range(2):
         subprocess.run([BASH, shell_path(ROOT / "apply.sh"), shell_path(tree),
                         "--no-config", "--test-usb1"], check=True, timeout=30)
@@ -131,5 +205,6 @@ if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as directory:
         temp = Path(directory)
         test_led_states(temp)
+        test_led_traffic(temp)
         test_apply(temp)
     print("WiFi LED behavior and source-tree integration: PASS")
